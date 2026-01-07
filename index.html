@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>NEON // CHESS // VILE</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;800&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --cyber-blue: #00f3ff;
+      --cyber-green: #0aff0a;
+      --vile-red: #ff003c;
+      --vile-dark: #3a000e;
+      --bg-color: #030303;
+      --glass: rgba(10, 10, 10, 0.9);
+      --cell-size: min(11vw, 55px);
+    }
+
+    * { box-sizing: border-box; user-select: none; -webkit-tap-highlight-color: transparent; }
+
+    body {
+      margin: 0;
+      height: 100vh;
+      background-color: var(--bg-color);
+      font-family: 'JetBrains Mono', monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      color: var(--cyber-blue);
+    }
+
+    /* Scanlines */
+    body::after {
+      content: "";
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: repeating-linear-gradient(0deg, rgba(0,0,0,0.15) 0px, rgba(0,0,0,0.15) 1px, transparent 1px, transparent 2px);
+      pointer-events: none;
+      z-index: 100;
+    }
+
+    /* --- LOADING SCREEN --- */
+    #loading-screen {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: #000; z-index: 200;
+      display: flex; flex-direction: column; justify-content: center; align-items: center;
+      transition: opacity 0.8s ease-out;
+    }
+    #loading-icon {
+      font-size: 5rem;
+      color: var(--vile-red);
+      text-shadow: 0 0 20px var(--vile-red);
+      margin-bottom: 20px;
+    }
+    .loading-text { font-family: 'Orbitron'; letter-spacing: 4px; font-size: 0.8rem; color: #555; }
+
+    /* --- MENUS --- */
+    #menu-screen {
+      position: absolute; top:0; left:0; width:100%; height:100%;
+      background: rgba(3,3,3,0.95); z-index: 50;
+      display: flex; flex-direction: column; justify-content: center; align-items: center;
+    }
+    .menu-title { 
+        font-family: 'Orbitron'; font-size: 3rem; text-align: center; margin-bottom: 40px; 
+        text-shadow: 0 0 10px var(--cyber-blue);
+    }
+    .vile-text { color: var(--vile-red); text-shadow: 0 0 15px var(--vile-red); }
+
+    .menu-btn {
+      background: transparent; border: 1px solid var(--cyber-blue); color: var(--cyber-blue);
+      padding: 15px 30px; margin: 10px; font-family: 'Orbitron'; font-size: 1.2rem;
+      cursor: pointer; width: 260px; text-transform: uppercase; transition: 0.2s;
+    }
+    .menu-btn:hover { background: var(--cyber-blue); color: #000; box-shadow: 0 0 20px var(--cyber-blue); }
+    
+    .menu-btn.secondary { border-color: var(--vile-red); color: var(--vile-red); }
+    .menu-btn.secondary:hover { background: var(--vile-red); color: #000; box-shadow: 0 0 20px var(--vile-red); }
+
+    .diff-selector { display: flex; gap: 5px; margin-top: 5px; margin-bottom: 20px; }
+    .diff-btn { 
+      border: 1px solid #333; color: #666; background: transparent; 
+      padding: 8px 12px; font-family: 'JetBrains Mono'; cursor: pointer; font-size: 0.8rem;
+    }
+    .diff-btn.selected { border-color: var(--vile-red); color: var(--vile-red); box-shadow: inset 0 0 10px rgba(255,0,60,0.3); }
+
+    /* --- GAME UI --- */
+    #game-area { display: flex; flex-direction: column; align-items: center; width: 100%; }
+    
+    .hud { width: 100%; max-width: 450px; display: flex; justify-content: space-between; padding: 10px; font-family: 'Orbitron'; }
+    .hud-box { padding: 5px 10px; border: 1px solid #333; font-size: 0.9rem; }
+    .turn-indicator { color: var(--cyber-blue); text-shadow: 0 0 5px var(--cyber-blue); }
+    .turn-indicator.vile { color: var(--vile-red); text-shadow: 0 0 5px var(--vile-red); }
+
+    /* BOARD */
+    #board {
+      display: grid; grid-template-columns: repeat(8, 1fr);
+      width: calc(var(--cell-size) * 8); height: calc(var(--cell-size) * 8);
+      border: 2px solid #333; margin: 20px 0;
+      box-shadow: 0 0 50px rgba(0,0,0,0.8);
+    }
+    
+    .cell {
+      width: var(--cell-size); height: var(--cell-size);
+      display: flex; justify-content: center; align-items: center;
+      font-size: 2.5rem; cursor: pointer; position: relative;
+    }
+    .cell.light { background: #151515; }
+    .cell.dark { background: #0a0a0a; }
+    
+    .cell.selected { background: rgba(0, 243, 255, 0.2); box-shadow: inset 0 0 15px var(--cyber-blue); }
+    .cell.last-move { background: rgba(255, 255, 255, 0.1); }
+    
+    .valid-dot {
+      position: absolute; width: 12px; height: 12px;
+      background: var(--cyber-green); border-radius: 50%;
+      opacity: 0.6; box-shadow: 0 0 5px var(--cyber-green); pointer-events: none;
+    }
+    .capture-ring {
+      position: absolute; width: 100%; height: 100%;
+      border: 4px solid var(--vile-red); opacity: 0.5;
+      box-shadow: inset 0 0 10px var(--vile-red); pointer-events: none;
+    }
+
+    /* PIECES */
+    .piece { z-index: 10; transition: transform 0.2s; }
+    /* Player (White) -> Cyber */
+    .p-white { color: var(--cyber-blue); filter: drop-shadow(0 0 5px var(--cyber-blue)); }
+    /* Opponent (Black) -> Vile */
+    .p-black { color: var(--vile-red); filter: drop-shadow(0 0 8px var(--vile-red)); }
+
+    /* UTILS */
+    .hidden { display: none !important; }
+    
+    /* MODAL */
+    #modal-overlay {
+      position: absolute; top:0; left:0; width:100%; height:100%;
+      background: rgba(0,0,0,0.9); z-index: 60;
+      display: flex; flex-direction: column; justify-content: center; align-items: center;
+    }
+    #modal-msg { font-family: 'Orbitron'; font-size: 2.5rem; color: #fff; margin-bottom: 20px; }
+
+  </style>
+</head>
+<body>
+
+  <div id="loading-screen">
+    <div id="loading-icon">♗</div>
+    <div class="loading-text">INITIALIZING TACTICAL CORE...</div>
+  </div>
+
+  <div id="menu-screen" class="hidden">
+    <div class="menu-title">CHESS <span class="vile-text">VILE</span></div>
+    
+    <button class="menu-btn" onclick="startGame('pvp')">PLAYER VS PLAYER</button>
+    
+    <div style="text-align: center; margin-top: 15px;">
+      <button class="menu-btn secondary" onclick="startGame('ai')">PLAYER VS AI</button>
+      <div class="diff-selector">
+        <button class="diff-btn" onclick="setDiff('easy')" id="btn-easy">SCOUT</button>
+        <button class="diff-btn selected" onclick="setDiff('normal')" id="btn-normal">TACTICIAN</button>
+        <button class="diff-btn" onclick="setDiff('hard')" id="btn-hard">GRANDMASTER</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="game-area" class="hidden">
+    <div class="hud">
+      <div class="hud-box" style="border-color:var(--cyber-blue)">P1: CYBER</div>
+      <div class="hud-box" id="turn-display" class="turn-indicator">WHITE TO MOVE</div>
+      <div class="hud-box" style="border-color:var(--vile-red)">P2: VILE</div>
+    </div>
+
+    <div id="board"></div>
+
+    <button class="menu-btn" style="font-size:0.8rem; padding:10px; width:auto;" onclick="toMenu()">ABORT GAME</button>
+  </div>
+
+  <div id="modal-overlay" class="hidden">
+    <div id="modal-msg">VILE WINS</div>
+    <button class="menu-btn" onclick="toMenu()">RETURN TO BASE</button>
+  </div>
+
+<script>
+/**
+ * NEON CHESS ENGINE // VILE EDITION
+ */
+
+// --- CONFIG ---
+const PIECES = {
+  // White (Cyber)
+  K:'♔', Q:'♕', R:'♖', B:'♗', N:'♘', P:'♙',
+  // Black (Vile)
+  k:'♚', q:'♛', r:'♜', b:'♝', n:'♞', p:'♟' 
+};
+const GRID_SIZE = 8;
+const START_FEN = [
+  'r','n','b','q','k','b','n','r',
+  'p','p','p','p','p','p','p','p',
+  '','','','','','','','',
+  '','','','','','','','',
+  '','','','','','','','',
+  '','','','','','','','',
+  'P','P','P','P','P','P','P','P',
+  'R','N','B','Q','K','B','N','R'
+];
+
+// --- STATE ---
+const State = {
+  board: [],
+  turn: 'white', // 'white' or 'black'
+  selectedIdx: null,
+  validMoves: [],
+  mode: 'pvp',
+  difficulty: 'normal', // easy (depth 1), normal (depth 2), hard (depth 3)
+  gameActive: false
+};
+
+const UI = {
+  loader: document.getElementById('loading-screen'),
+  loadIcon: document.getElementById('loading-icon'),
+  menu: document.getElementById('menu-screen'),
+  game: document.getElementById('game-area'),
+  board: document.getElementById('board'),
+  turn: document.getElementById('turn-display'),
+  modal: document.getElementById('modal-overlay'),
+  msg: document.getElementById('modal-msg')
+};
+
+// --- LOADING SEQUENCE ---
+const loadIcons = ['♗', '♘', '♖', '♕', '♔'];
+let loadIdx = 0;
+let loadInterval = setInterval(() => {
+  UI.loadIcon.innerText = loadIcons[loadIdx];
+  loadIdx = (loadIdx + 1) % loadIcons.length;
+}, 300);
+
+window.onload = () => {
+  setTimeout(() => {
+    clearInterval(loadInterval);
+    UI.loader.classList.add('hidden');
+    UI.menu.classList.remove('hidden');
+  }, 2000); // 2 second cinematic load
+};
+
+// --- MENU LOGIC ---
+function setDiff(d) {
+  State.difficulty = d;
+  document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('selected'));
+  document.getElementById('btn-'+d).classList.add('selected');
+}
+
+function startGame(mode) {
+  State.mode = mode;
+  State.gameActive = true;
+  State.turn = 'white';
+  State.board = [...START_FEN];
+  
+  UI.menu.classList.add('hidden');
+  UI.game.classList.remove('hidden');
+  UI.modal.classList.add('hidden');
+  
+  renderBoard();
+  updateStatus();
+}
+
+function toMenu() {
+  State.gameActive = false;
+  UI.game.classList.add('hidden');
+  UI.modal.classList.add('hidden');
+  UI.menu.classList.remove('hidden');
+}
+
+// --- RENDERING ---
+function renderBoard() {
+  UI.board.innerHTML = '';
+  State.board.forEach((cell, i) => {
+    const el = document.createElement('div');
+    const isDark = (Math.floor(i/8) + i%8) % 2 === 1;
+    el.className = `cell ${isDark ? 'dark' : 'light'}`;
+    el.onclick = () => handleCellClick(i);
+    
+    // Add piece
+    if(cell) {
+      const p = document.createElement('span');
+      p.className = `piece ${isWhite(cell) ? 'p-white' : 'p-black'}`;
+      p.innerText = PIECES[cell];
+      el.appendChild(p);
+    }
+    
+    // Highlights
+    if(State.selectedIdx === i) el.classList.add('selected');
+    if(State.validMoves.includes(i)) {
+      if(cell) {
+        // Capture indicator
+        const ring = document.createElement('div');
+        ring.className = 'capture-ring';
+        el.appendChild(ring);
+      } else {
+        // Move dot
+        const dot = document.createElement('div');
+        dot.className = 'valid-dot';
+        el.appendChild(dot);
+      }
+    }
+    
+    UI.board.appendChild(el);
+  });
+}
+
+function updateStatus() {
+  const t = State.turn.toUpperCase();
+  UI.turn.innerText = `${t} TO MOVE`;
+  UI.turn.className = `hud-box turn-indicator ${State.turn === 'black' ? 'vile' : ''}`;
+}
+
+// --- INTERACTION ---
+function handleCellClick(idx) {
+  if(!State.gameActive) return;
+  
+  // Prevent player from clicking if it's AI turn
+  if(State.mode === 'ai' && State.turn === 'black') return;
+
+  const piece = State.board[idx];
+  const isOwnPiece = piece && (State.turn === 'white' ? isWhite(piece) : !isWhite(piece));
+
+  // 1. Select Piece
+  if(isOwnPiece) {
+    State.selectedIdx = idx;
+    State.validMoves = getValidMoves(State.board, idx);
+    renderBoard();
+    return;
+  }
+
+  // 2. Move to Valid Square
+  if(State.selectedIdx !== null && State.validMoves.includes(idx)) {
+    executeMove(State.selectedIdx, idx);
+  } else {
+    // Deselect
+    State.selectedIdx = null;
+    State.validMoves = [];
+    renderBoard();
+  }
+}
+
+function executeMove(from, to) {
+  const mover = State.board[from];
+  const target = State.board[to]; // for win check
+  
+  // Update State
+  State.board[to] = mover;
+  State.board[from] = '';
+  
+  // Pawn Promotion (Auto-Queen)
+  if(mover === 'P' && to < 8) State.board[to] = 'Q';
+  if(mover === 'p' && to > 55) State.board[to] = 'q';
+
+  State.selectedIdx = null;
+  State.validMoves = [];
+  
+  // Win Check (King Capture)
+  if(target && target.toLowerCase() === 'k') {
+    gameOver(State.turn);
+    return;
+  }
+  
+  // Switch Turn
+  State.turn = State.turn === 'white' ? 'black' : 'white';
+  renderBoard();
+  updateStatus();
+  
+  // Trigger AI
+  if(State.gameActive && State.mode === 'ai' && State.turn === 'black') {
+    setTimeout(aiThink, 500);
+  }
+}
+
+function gameOver(winner) {
+  State.gameActive = false;
+  UI.modal.classList.remove('hidden');
+  UI.msg.innerText = `${winner.toUpperCase()} WINS`;
+  UI.msg.style.color = winner === 'white' ? 'var(--cyber-blue)' : 'var(--vile-red)';
+}
+
+// --- CHESS LOGIC (Simplified) ---
+function isWhite(p) { return p === p.toUpperCase(); }
+
+function getValidMoves(board, idx) {
+  const p = board[idx];
+  if(!p) return [];
+  
+  const type = p.toLowerCase();
+  const moves = [];
+  const r = Math.floor(idx/8);
+  const c = idx%8;
+  const isW = isWhite(p);
+  const colorMult = isW ? -1 : 1; // White moves Up (-), Black Down (+)
+  
+  const checkAdd = (nr, nc) => {
+    if(nr<0 || nr>7 || nc<0 || nc>7) return false; // OOB
+    const tIdx = nr*8 + nc;
+    const target = board[tIdx];
+    if(!target) { moves.push(tIdx); return true; } // Empty
+    if(isWhite(target) !== isW) { moves.push(tIdx); return false; } // Capture
+    return false; // Blocked by self
+  };
+
+  // Pawn
+  if(type === 'p') {
+    // Forward 1
+    const f1 = idx + (8 * colorMult);
+    if(board[f1] === '') {
+      moves.push(f1);
+      // Start move (Forward 2)
+      if((isW && r===6) || (!isW && r===1)) {
+        const f2 = idx + (16 * colorMult);
+        if(board[f2] === '') moves.push(f2);
+      }
+    }
+    // Captures
+    const caps = [idx+(8*colorMult)-1, idx+(8*colorMult)+1];
+    caps.forEach(cp => {
+       const cr = Math.floor(cp/8);
+       const cc = cp%8;
+       if(Math.abs(cr-r)===1 && Math.abs(cc-c)===1 && board[cp] && isWhite(board[cp])!==isW) {
+         moves.push(cp);
+       }
+    });
+  }
+  
+  // Knight
+  if(type === 'n') {
+    [[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]].forEach(o => checkAdd(r+o[0], c+o[1]));
+  }
+  
+  // King
+  if(type === 'k') {
+    [[0,1],[0,-1],[1,0],[-1,0],[1,1],[1,-1],[-1,1],[-1,-1]].forEach(o => checkAdd(r+o[0], c+o[1]));
+  }
+  
+  // Sliding (R, B, Q)
+  const dirs = {
+    'r': [[0,1],[0,-1],[1,0],[-1,0]],
+    'b': [[1,1],[1,-1],[-1,1],[-1,-1]],
+    'q': [[0,1],[0,-1],[1,0],[-1,0],[1,1],[1,-1],[-1,1],[-1,-1]]
+  };
+  
+  if(dirs[type]) {
+    dirs[type].forEach(d => {
+      let nr = r + d[0], nc = c + d[1];
+      while(true) {
+        if(nr<0||nr>7||nc<0||nc>7) break;
+        const tIdx = nr*8 + nc;
+        if(board[tIdx]) {
+           if(isWhite(board[tIdx]) !== isW) moves.push(tIdx);
+           break;
+        }
+        moves.push(tIdx);
+        nr += d[0]; nc += d[1];
+      }
+    });
+  }
+
+  return moves;
+}
+
+// --- AI BRAIN (Minimax) ---
+function aiThink() {
+  const depth = State.difficulty === 'easy' ? 1 : (State.difficulty === 'normal' ? 2 : 3);
+  
+  // AI is always Black (maximizing for Black, which effectively means minimizing score if White is +)
+  // Let's standardise: White pieces +, Black pieces -. AI wants LOWEST score.
+  
+  const bestMove = minimax(State.board, depth, -Infinity, Infinity, false).move; // false = Black turn
+  
+  if(bestMove) {
+    executeMove(bestMove.from, bestMove.to);
+  } else {
+    // No moves? (Stalemate or Mate) - simplistic handler
+    gameOver('white'); 
+  }
+}
+
+function minimax(board, depth, alpha, beta, isMaximizing) {
+  if(depth === 0) return { score: evaluate(board) };
+
+  const moves = getAllMoves(board, isMaximizing);
+  
+  // Check for King Capture (Game Over state in tree)
+  // (In a real engine we check for mate, here we check if King is missing from board which shouldn't happen in legal generation but good for robustness)
+  
+  if(moves.length === 0) return { score: evaluate(board) };
+
+  let bestMove = null;
+
+  if(isMaximizing) { // WHITE (Max)
+    let maxEval = -Infinity;
+    for(let m of moves) {
+      const saved = board[m.to];
+      board[m.to] = board[m.from];
+      board[m.from] = '';
+      
+      const eval = minimax(board, depth-1, alpha, beta, false).score;
+      
+      board[m.from] = board[m.to];
+      board[m.to] = saved;
+
+      if(eval > maxEval) { maxEval = eval; bestMove = m; }
+      alpha = Math.max(alpha, eval);
+      if(beta <= alpha) break;
+    }
+    return { score: maxEval, move: bestMove };
+  } else { // BLACK (Min)
+    let minEval = Infinity;
+    for(let m of moves) {
+      const saved = board[m.to];
+      board[m.to] = board[m.from];
+      board[m.from] = '';
+      
+      const eval = minimax(board, depth-1, alpha, beta, true).score;
+      
+      board[m.from] = board[m.to];
+      board[m.to] = saved;
+
+      if(eval < minEval) { minEval = eval; bestMove = m; }
+      beta = Math.min(beta, eval);
+      if(beta <= alpha) break;
+    }
+    return { score: minEval, move: bestMove };
+  }
+}
+
+function getAllMoves(board, isWhiteTurn) {
+  let all = [];
+  board.forEach((p, i) => {
+    if(p && isWhite(p) === isWhiteTurn) {
+      const moves = getValidMoves(board, i);
+      moves.forEach(target => all.push({ from: i, to: target }));
+    }
+  });
+  // Sort moves: Captures first (simple optimization)
+  return all.sort((a,b) => (board[b.to]?10:0) - (board[a.to]?10:0));
+}
+
+function evaluate(board) {
+  const values = { p:10, n:30, b:30, r:50, q:90, k:900 };
+  let score = 0;
+  board.forEach((p, i) => {
+    if(!p) return;
+    const type = p.toLowerCase();
+    const val = values[type];
+    const isW = isWhite(p);
+    
+    // Positional bias (Centralize)
+    const r = Math.floor(i/8), c = i%8;
+    const centerBonus = (r>2 && r<5 && c>2 && c<5) ? 2 : 0;
+    
+    if(isW) score += (val + centerBonus);
+    else score -= (val + centerBonus);
+  });
+  return score;
+}
+
+</script>
+</body>
+</html>
