@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>NEON // CHESS // VILE</title>
+  <title> CHESS </title>
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;800&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
@@ -16,10 +16,17 @@
       --vile-dark: #3a000e;
       --bg-color: #030303;
       --glass: rgba(10, 10, 10, 0.9);
-      --cell-size: min(11vw, 55px);
+      --glass-panel: rgba(20, 20, 20, 0.7);
+      --cell-size: min(10vw, 55px);
     }
 
     * { box-sizing: border-box; user-select: none; -webkit-tap-highlight-color: transparent; }
+
+    /* CUSTOM SCROLLBAR */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #000; }
+    ::-webkit-scrollbar-thumb { background: var(--cyber-blue); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #fff; }
 
     body {
       margin: 0;
@@ -34,7 +41,6 @@
       color: var(--cyber-blue);
     }
 
-    /* Scanlines */
     body::after {
       content: "";
       position: absolute;
@@ -44,7 +50,7 @@
       z-index: 100;
     }
 
-    /* --- LOADING SCREEN --- */
+    /* LOADING & MENU (UNCHANGED STYLING) */
     #loading-screen {
       position: fixed; top: 0; left: 0; width: 100%; height: 100%;
       background: #000; z-index: 200;
@@ -59,7 +65,6 @@
     }
     .loading-text { font-family: 'Orbitron'; letter-spacing: 4px; font-size: 0.8rem; color: #555; }
 
-    /* --- MENUS --- */
     #menu-screen {
       position: absolute; top:0; left:0; width:100%; height:100%;
       background: rgba(3,3,3,0.95); z-index: 50;
@@ -80,6 +85,8 @@
     
     .menu-btn.secondary { border-color: var(--vile-red); color: var(--vile-red); }
     .menu-btn.secondary:hover { background: var(--vile-red); color: #000; box-shadow: 0 0 20px var(--vile-red); }
+    .menu-btn.training { border-color: var(--cyber-green); color: var(--cyber-green); }
+    .menu-btn.training:hover { background: var(--cyber-green); color: #000; box-shadow: 0 0 20px var(--cyber-green); }
 
     .diff-selector { display: flex; gap: 5px; margin-top: 5px; margin-bottom: 20px; }
     .diff-btn { 
@@ -88,20 +95,39 @@
     }
     .diff-btn.selected { border-color: var(--vile-red); color: var(--vile-red); box-shadow: inset 0 0 10px rgba(255,0,60,0.3); }
 
-    /* --- GAME UI --- */
-    #game-area { display: flex; flex-direction: column; align-items: center; width: 100%; }
+    /* LAYOUT OVERHAUL */
+    #game-area { 
+      display: flex; 
+      flex-direction: column; /* Default mobile */
+      align-items: center; 
+      width: 100%; height: 100%;
+      padding: 20px;
+      transition: all 0.5s ease;
+    }
+
+    /* Desktop Layout: Side-by-Side */
+    @media (min-width: 800px) {
+      #game-area {
+        flex-direction: row;
+        justify-content: center;
+        gap: 40px;
+      }
+    }
     
-    .hud { width: 100%; max-width: 450px; display: flex; justify-content: space-between; padding: 10px; font-family: 'Orbitron'; }
-    .hud-box { padding: 5px 10px; border: 1px solid #333; font-size: 0.9rem; }
-    .turn-indicator { color: var(--cyber-blue); text-shadow: 0 0 5px var(--cyber-blue); }
+    .game-left { display: flex; flex-direction: column; align-items: center; }
+    
+    .hud { width: 100%; max-width: 500px; display: flex; justify-content: space-between; padding: 10px; font-family: 'Orbitron'; margin-bottom: 5px; }
+    .hud-box { padding: 5px 10px; border: 1px solid #333; font-size: 0.8rem; text-align: center; min-width: 80px; background: rgba(0,0,0,0.5);}
+    .turn-indicator { color: var(--cyber-blue); text-shadow: 0 0 5px var(--cyber-blue); font-weight: bold; transition: color 0.3s; }
     .turn-indicator.vile { color: var(--vile-red); text-shadow: 0 0 5px var(--vile-red); }
 
     /* BOARD */
     #board {
       display: grid; grid-template-columns: repeat(8, 1fr);
       width: calc(var(--cell-size) * 8); height: calc(var(--cell-size) * 8);
-      border: 2px solid #333; margin: 20px 0;
+      border: 2px solid #333; 
       box-shadow: 0 0 50px rgba(0,0,0,0.8);
+      position: relative;
     }
     
     .cell {
@@ -112,9 +138,17 @@
     .cell.light { background: #151515; }
     .cell.dark { background: #0a0a0a; }
     
-    .cell.selected { background: rgba(0, 243, 255, 0.2); box-shadow: inset 0 0 15px var(--cyber-blue); }
+    .cell.selected { background: rgba(0, 243, 255, 0.15); box-shadow: inset 0 0 10px var(--cyber-blue); }
     .cell.last-move { background: rgba(255, 255, 255, 0.1); }
+    .cell.in-check { background: rgba(255, 0, 60, 0.3); box-shadow: inset 0 0 20px var(--vile-red); }
     
+    /* Best Move Highlight (Training Mode) */
+    .cell.best-move { 
+        box-shadow: inset 0 0 15px var(--cyber-green); 
+        animation: pulse 2s infinite;
+    }
+    @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
+
     .valid-dot {
       position: absolute; width: 12px; height: 12px;
       background: var(--cyber-green); border-radius: 50%;
@@ -126,24 +160,74 @@
       box-shadow: inset 0 0 10px var(--vile-red); pointer-events: none;
     }
 
-    /* PIECES */
-    .piece { z-index: 10; transition: transform 0.2s; }
-    /* Player (White) -> Cyber */
+    .piece { z-index: 10; transition: transform 0.2s; cursor: pointer; }
     .p-white { color: var(--cyber-blue); filter: drop-shadow(0 0 5px var(--cyber-blue)); }
-    /* Opponent (Black) -> Vile */
     .p-black { color: var(--vile-red); filter: drop-shadow(0 0 8px var(--vile-red)); }
 
-    /* UTILS */
+    /* SIDE PANEL (HISTORY & LOGS) */
+    .side-panel {
+      width: 100%; max-width: 500px;
+      height: calc(var(--cell-size) * 8);
+      border: 1px solid #333;
+      background: var(--glass-panel);
+      display: flex; flex-direction: column;
+      margin-top: 20px;
+    }
+    @media (min-width: 800px) {
+      .side-panel { width: 250px; margin-top: 0; margin-left: 20px; }
+    }
+
+    .panel-header {
+      background: #111; padding: 10px; border-bottom: 1px solid #333;
+      font-family: 'Orbitron'; font-size: 0.9rem; text-align: center;
+      color: #888;
+    }
+    .history-list {
+      flex: 1; overflow-y: auto; padding: 10px;
+      font-size: 0.8rem; line-height: 1.6;
+      scroll-behavior: smooth;
+    }
+    .history-row { display: flex; justify-content: space-between; border-bottom: 1px solid #222; padding: 4px 0; }
+    .history-num { color: #555; width: 30px; }
+    .history-move { color: #aaa; width: 45%; }
+    .history-move.white { color: var(--cyber-blue); }
+    .history-move.black { color: var(--vile-red); }
+
+    .controls-area {
+      padding: 10px; border-top: 1px solid #333; display: flex; gap: 5px; flex-wrap: wrap; justify-content: center;
+    }
+    .ctrl-btn {
+      background: #000; border: 1px solid #444; color: #888;
+      padding: 5px 10px; cursor: pointer; font-family: 'JetBrains Mono'; font-size: 0.7rem;
+      flex-grow: 1; transition: 0.2s;
+    }
+    .ctrl-btn:hover { border-color: #fff; color: #fff; }
+
+    /* PROMOTION OVERLAY */
+    #promo-overlay {
+        position: absolute; top:0; left:0; width:100%; height:100%;
+        background: rgba(0,0,0,0.85); z-index: 150;
+        display: flex; justify-content: center; align-items: center; gap: 15px;
+    }
+    .promo-choice {
+        font-size: 3rem; cursor: pointer; border: 1px solid var(--cyber-blue);
+        padding: 10px; background: #111; transition: 0.2s;
+    }
+    .promo-choice:hover { background: var(--cyber-blue); color: #000; }
+
     .hidden { display: none !important; }
     
-    /* MODAL */
     #modal-overlay {
       position: absolute; top:0; left:0; width:100%; height:100%;
       background: rgba(0,0,0,0.9); z-index: 60;
       display: flex; flex-direction: column; justify-content: center; align-items: center;
     }
-    #modal-msg { font-family: 'Orbitron'; font-size: 2.5rem; color: #fff; margin-bottom: 20px; }
+    #modal-msg { font-family: 'Orbitron'; font-size: 2.5rem; color: #fff; margin-bottom: 10px; text-align: center; }
+    #modal-sub { font-family: 'JetBrains Mono'; font-size: 1rem; color: #888; margin-bottom: 30px; }
 
+    /* Replay Controls in Modal */
+    .replay-controls { display: flex; gap: 10px; margin-bottom: 20px; }
+    
   </style>
 </head>
 <body>
@@ -157,6 +241,7 @@
     <div class="menu-title">CHESS <span class="vile-text">VILE</span></div>
     
     <button class="menu-btn" onclick="startGame('pvp')">PLAYER VS PLAYER</button>
+    <button class="menu-btn training" onclick="startGame('training')">TRAINING SIMULATION</button>
     
     <div style="text-align: center; margin-top: 15px;">
       <button class="menu-btn secondary" onclick="startGame('ai')">PLAYER VS AI</button>
@@ -169,35 +254,54 @@
   </div>
 
   <div id="game-area" class="hidden">
-    <div class="hud">
-      <div class="hud-box" style="border-color:var(--cyber-blue)">P1: CYBER</div>
-      <div class="hud-box" id="turn-display" class="turn-indicator">WHITE TO MOVE</div>
-      <div class="hud-box" style="border-color:var(--vile-red)">P2: VILE</div>
+    
+    <div class="game-left">
+      <div class="hud">
+        <div class="hud-box" id="score-cyber" style="border-color:var(--cyber-blue)">CYBER: 0</div>
+        <div class="hud-box" id="turn-display" class="turn-indicator">WHITE TO MOVE</div>
+        <div class="hud-box" id="score-vile" style="border-color:var(--vile-red)">VILE: 0</div>
+      </div>
+
+      <div id="board">
+        <div id="promo-overlay" class="hidden"></div>
+      </div>
     </div>
 
-    <div id="board"></div>
+    <div class="side-panel">
+      <div class="panel-header" id="panel-title">LIVE FEED // MOVES</div>
+      <div class="history-list" id="move-history">
+        </div>
+      <div class="controls-area" id="live-controls">
+         <button class="ctrl-btn" onclick="abortGame()">ABORT</button>
+      </div>
+      <div class="controls-area hidden" id="replay-controls">
+         <button class="ctrl-btn" onclick="replayStep(-1)">PREV</button>
+         <button class="ctrl-btn" onclick="toggleAutoReplay()">PLAY/PAUSE</button>
+         <button class="ctrl-btn" onclick="replayStep(1)">NEXT</button>
+         <button class="ctrl-btn" style="color:var(--vile-red); border-color:var(--vile-red)" onclick="exitReplay()">EXIT</button>
+      </div>
+    </div>
 
-    <button class="menu-btn" style="font-size:0.8rem; padding:10px; width:auto;" onclick="toMenu()">ABORT GAME</button>
   </div>
 
   <div id="modal-overlay" class="hidden">
     <div id="modal-msg">VILE WINS</div>
-    <button class="menu-btn" onclick="toMenu()">RETURN TO BASE</button>
+    <div id="modal-sub">CHECKMATE</div>
+    <button class="menu-btn" onclick="nextRound()">INITIATE NEXT ROUND</button>
+    <button class="menu-btn secondary" onclick="startReplay()">VIEW REPLAY</button>
+    <button class="menu-btn" style="font-size:0.8rem; margin-top:5px; border:none;" onclick="abortGame()">MAIN MENU</button>
   </div>
 
 <script>
 /**
- * NEON CHESS ENGINE // VILE EDITION
+ * NEON CHESS ENGINE // VILE TOURNAMENT EDITION
  */
 
-// --- CONFIG ---
 const PIECES = {
-  // White (Cyber)
   K:'♔', Q:'♕', R:'♖', B:'♗', N:'♘', P:'♙',
-  // Black (Vile)
   k:'♚', q:'♛', r:'♜', b:'♝', n:'♞', p:'♟' 
 };
-const GRID_SIZE = 8;
+
 const START_FEN = [
   'r','n','b','q','k','b','n','r',
   'p','p','p','p','p','p','p','p',
@@ -209,15 +313,23 @@ const START_FEN = [
   'R','N','B','Q','K','B','N','R'
 ];
 
-// --- STATE ---
 const State = {
   board: [],
-  turn: 'white', // 'white' or 'black'
+  turn: 'white',
   selectedIdx: null,
   validMoves: [],
-  mode: 'pvp',
-  difficulty: 'normal', // easy (depth 1), normal (depth 2), hard (depth 3)
-  gameActive: false
+  mode: 'pvp', // pvp, ai, training
+  difficulty: 'normal',
+  gameActive: false,
+  replayMode: false,
+  score: { white: 0, black: 0 },
+  history: {
+      hasMoved: {},
+      lastMove: null,
+      moveStack: [] // Stores board snapshots for replay
+  },
+  replayIndex: 0,
+  autoReplayTimer: null
 };
 
 const UI = {
@@ -228,15 +340,22 @@ const UI = {
   board: document.getElementById('board'),
   turn: document.getElementById('turn-display'),
   modal: document.getElementById('modal-overlay'),
-  msg: document.getElementById('modal-msg')
+  msg: document.getElementById('modal-msg'),
+  sub: document.getElementById('modal-sub'),
+  promo: document.getElementById('promo-overlay'),
+  sCyber: document.getElementById('score-cyber'),
+  sVile: document.getElementById('score-vile'),
+  history: document.getElementById('move-history'),
+  liveCtrl: document.getElementById('live-controls'),
+  repCtrl: document.getElementById('replay-controls'),
+  panelTitle: document.getElementById('panel-title')
 };
 
 // --- LOADING SEQUENCE ---
-const loadIcons = ['♗', '♘', '♖', '♕', '♔'];
 let loadIdx = 0;
 let loadInterval = setInterval(() => {
-  UI.loadIcon.innerText = loadIcons[loadIdx];
-  loadIdx = (loadIdx + 1) % loadIcons.length;
+  UI.loadIcon.innerText = ['♗', '♘', '♖', '♕', '♔'][loadIdx];
+  loadIdx = (loadIdx + 1) % 5;
 }, 300);
 
 window.onload = () => {
@@ -244,10 +363,9 @@ window.onload = () => {
     clearInterval(loadInterval);
     UI.loader.classList.add('hidden');
     UI.menu.classList.remove('hidden');
-  }, 2000); // 2 second cinematic load
+  }, 1000);
 };
 
-// --- MENU LOGIC ---
 function setDiff(d) {
   State.difficulty = d;
   document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('selected'));
@@ -256,208 +374,113 @@ function setDiff(d) {
 
 function startGame(mode) {
   State.mode = mode;
+  State.score = { white: 0, black: 0 };
+  nextRound();
+}
+
+function nextRound() {
   State.gameActive = true;
+  State.replayMode = false;
   State.turn = 'white';
   State.board = [...START_FEN];
+  State.selectedIdx = null;
+  State.validMoves = [];
+  State.history.hasMoved = { 0:false, 4:false, 7:false, 56:false, 60:false, 63:false };
+  State.history.lastMove = null;
+  State.history.moveStack = [];
+  
+  // Push initial state
+  recordHistorySnapshot();
   
   UI.menu.classList.add('hidden');
   UI.game.classList.remove('hidden');
   UI.modal.classList.add('hidden');
+  UI.liveCtrl.classList.remove('hidden');
+  UI.repCtrl.classList.add('hidden');
+  UI.panelTitle.innerText = "LIVE FEED // MOVES";
+  
+  UI.sCyber.innerText = `CYBER: ${State.score.white}`;
+  UI.sVile.innerText = `VILE: ${State.score.black}`;
+  UI.history.innerHTML = '';
   
   renderBoard();
   updateStatus();
+  
+  if(State.mode === 'training') {
+    setTimeout(showTrainingHint, 500);
+  }
 }
 
-function toMenu() {
+function abortGame() {
   State.gameActive = false;
+  if(State.autoReplayTimer) clearInterval(State.autoReplayTimer);
   UI.game.classList.add('hidden');
   UI.modal.classList.add('hidden');
   UI.menu.classList.remove('hidden');
 }
 
-// --- RENDERING ---
-function renderBoard() {
-  UI.board.innerHTML = '';
-  State.board.forEach((cell, i) => {
-    const el = document.createElement('div');
-    const isDark = (Math.floor(i/8) + i%8) % 2 === 1;
-    el.className = `cell ${isDark ? 'dark' : 'light'}`;
-    el.onclick = () => handleCellClick(i);
-    
-    // Add piece
-    if(cell) {
-      const p = document.createElement('span');
-      p.className = `piece ${isWhite(cell) ? 'p-white' : 'p-black'}`;
-      p.innerText = PIECES[cell];
-      el.appendChild(p);
-    }
-    
-    // Highlights
-    if(State.selectedIdx === i) el.classList.add('selected');
-    if(State.validMoves.includes(i)) {
-      if(cell) {
-        // Capture indicator
-        const ring = document.createElement('div');
-        ring.className = 'capture-ring';
-        el.appendChild(ring);
-      } else {
-        // Move dot
-        const dot = document.createElement('div');
-        dot.className = 'valid-dot';
-        el.appendChild(dot);
-      }
-    }
-    
-    UI.board.appendChild(el);
-  });
-}
+// --- CORE LOGIC ---
+function isWhite(p) { return p && p === p.toUpperCase(); }
 
-function updateStatus() {
-  const t = State.turn.toUpperCase();
-  UI.turn.innerText = `${t} TO MOVE`;
-  UI.turn.className = `hud-box turn-indicator ${State.turn === 'black' ? 'vile' : ''}`;
-}
-
-// --- INTERACTION ---
-function handleCellClick(idx) {
-  if(!State.gameActive) return;
-  
-  // Prevent player from clicking if it's AI turn
-  if(State.mode === 'ai' && State.turn === 'black') return;
-
-  const piece = State.board[idx];
-  const isOwnPiece = piece && (State.turn === 'white' ? isWhite(piece) : !isWhite(piece));
-
-  // 1. Select Piece
-  if(isOwnPiece) {
-    State.selectedIdx = idx;
-    State.validMoves = getValidMoves(State.board, idx);
-    renderBoard();
-    return;
-  }
-
-  // 2. Move to Valid Square
-  if(State.selectedIdx !== null && State.validMoves.includes(idx)) {
-    executeMove(State.selectedIdx, idx);
-  } else {
-    // Deselect
-    State.selectedIdx = null;
-    State.validMoves = [];
-    renderBoard();
-  }
-}
-
-function executeMove(from, to) {
-  const mover = State.board[from];
-  const target = State.board[to]; // for win check
-  
-  // Update State
-  State.board[to] = mover;
-  State.board[from] = '';
-  
-  // Pawn Promotion (Auto-Queen)
-  if(mover === 'P' && to < 8) State.board[to] = 'Q';
-  if(mover === 'p' && to > 55) State.board[to] = 'q';
-
-  State.selectedIdx = null;
-  State.validMoves = [];
-  
-  // Win Check (King Capture)
-  if(target && target.toLowerCase() === 'k') {
-    gameOver(State.turn);
-    return;
-  }
-  
-  // Switch Turn
-  State.turn = State.turn === 'white' ? 'black' : 'white';
-  renderBoard();
-  updateStatus();
-  
-  // Trigger AI
-  if(State.gameActive && State.mode === 'ai' && State.turn === 'black') {
-    setTimeout(aiThink, 500);
-  }
-}
-
-function gameOver(winner) {
-  State.gameActive = false;
-  UI.modal.classList.remove('hidden');
-  UI.msg.innerText = `${winner.toUpperCase()} WINS`;
-  UI.msg.style.color = winner === 'white' ? 'var(--cyber-blue)' : 'var(--vile-red)';
-}
-
-// --- CHESS LOGIC (Simplified) ---
-function isWhite(p) { return p === p.toUpperCase(); }
-
-function getValidMoves(board, idx) {
+function getValidMoves(board, idx, checkSafe = true) {
   const p = board[idx];
   if(!p) return [];
   
   const type = p.toLowerCase();
   const moves = [];
-  const r = Math.floor(idx/8);
-  const c = idx%8;
+  const r = Math.floor(idx/8), c = idx%8;
   const isW = isWhite(p);
-  const colorMult = isW ? -1 : 1; // White moves Up (-), Black Down (+)
-  
-  const checkAdd = (nr, nc) => {
-    if(nr<0 || nr>7 || nc<0 || nc>7) return false; // OOB
+  const colorMult = isW ? -1 : 1;
+
+  const tryAdd = (nr, nc) => {
+    if(nr<0 || nr>7 || nc<0 || nc>7) return false;
     const tIdx = nr*8 + nc;
     const target = board[tIdx];
-    if(!target) { moves.push(tIdx); return true; } // Empty
-    if(isWhite(target) !== isW) { moves.push(tIdx); return false; } // Capture
-    return false; // Blocked by self
+    if(!target) { moves.push(tIdx); return true; }
+    if(isWhite(target) !== isW) { moves.push(tIdx); return false; }
+    return false;
   };
 
-  // Pawn
   if(type === 'p') {
-    // Forward 1
-    const f1 = idx + (8 * colorMult);
-    if(board[f1] === '') {
-      moves.push(f1);
-      // Start move (Forward 2)
-      if((isW && r===6) || (!isW && r===1)) {
-        const f2 = idx + (16 * colorMult);
-        if(board[f2] === '') moves.push(f2);
-      }
+    let f1 = idx + (8 * colorMult);
+    if(f1 >= 0 && f1 < 64 && !board[f1]) {
+        moves.push(f1);
+        let f2 = idx + (16 * colorMult);
+        if(((isW && r===6) || (!isW && r===1)) && !board[f2]) moves.push(f2);
     }
-    // Captures
-    const caps = [idx+(8*colorMult)-1, idx+(8*colorMult)+1];
-    caps.forEach(cp => {
-       const cr = Math.floor(cp/8);
-       const cc = cp%8;
-       if(Math.abs(cr-r)===1 && Math.abs(cc-c)===1 && board[cp] && isWhite(board[cp])!==isW) {
-         moves.push(cp);
-       }
+    // Caps
+    [idx+(8*colorMult)-1, idx+(8*colorMult)+1].forEach(cp => {
+        if(cp>=0 && cp<64 && Math.abs(Math.floor(cp/8)-r)===1 && Math.abs(cp%8-c)===1) {
+            if(board[cp] && isWhite(board[cp])!==isW) moves.push(cp);
+            // EN PASSANT
+            if(!board[cp] && State.history.lastMove && State.history.lastMove.to === cp - (8*colorMult) && State.history.lastMove.piece.toLowerCase() === 'p') {
+                moves.push(cp);
+            }
+        }
     });
-  }
-  
-  // Knight
-  if(type === 'n') {
-    [[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]].forEach(o => checkAdd(r+o[0], c+o[1]));
-  }
-  
-  // King
-  if(type === 'k') {
-    [[0,1],[0,-1],[1,0],[-1,0],[1,1],[1,-1],[-1,1],[-1,-1]].forEach(o => checkAdd(r+o[0], c+o[1]));
-  }
-  
-  // Sliding (R, B, Q)
-  const dirs = {
-    'r': [[0,1],[0,-1],[1,0],[-1,0]],
-    'b': [[1,1],[1,-1],[-1,1],[-1,-1]],
-    'q': [[0,1],[0,-1],[1,0],[-1,0],[1,1],[1,-1],[-1,1],[-1,-1]]
-  };
-  
-  if(dirs[type]) {
-    dirs[type].forEach(d => {
+  } else if(type === 'n') {
+    [[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]].forEach(o => tryAdd(r+o[0], c+o[1]));
+  } else if(type === 'k') {
+    [[0,1],[0,-1],[1,0],[-1,0],[1,1],[1,-1],[-1,1],[-1,-1]].forEach(o => tryAdd(r+o[0], c+o[1]));
+    // CASTLING
+    if(checkSafe && !isSquareAttacked(board, idx, !isW)) {
+        if(isW && !State.history.hasMoved[60]) {
+            if(!State.history.hasMoved[63] && !board[61] && !board[62] && !isSquareAttacked(board, 61, false)) moves.push(62);
+            if(!State.history.hasMoved[56] && !board[59] && !board[58] && !board[57] && !isSquareAttacked(board, 59, false)) moves.push(58);
+        } else if(!isW && !State.history.hasMoved[4]) {
+            if(!State.history.hasMoved[7] && !board[5] && !board[6] && !isSquareAttacked(board, 5, true)) moves.push(6);
+            if(!State.history.hasMoved[0] && !board[3] && !board[2] && !board[1] && !isSquareAttacked(board, 3, true)) moves.push(2);
+        }
+    }
+  } else {
+    const dirs = type==='r'?[[0,1],[0,-1],[1,0],[-1,0]]:type==='b'?[[1,1],[1,-1],[-1,1],[-1,-1]]:[[0,1],[0,-1],[1,0],[-1,0],[1,1],[1,-1],[-1,1],[-1,-1]];
+    dirs.forEach(d => {
       let nr = r + d[0], nc = c + d[1];
-      while(true) {
-        if(nr<0||nr>7||nc<0||nc>7) break;
+      while(nr>=0 && nr<8 && nc>=0 && nc<8) {
         const tIdx = nr*8 + nc;
         if(board[tIdx]) {
-           if(isWhite(board[tIdx]) !== isW) moves.push(tIdx);
-           break;
+            if(isWhite(board[tIdx]) !== isW) moves.push(tIdx);
+            break;
         }
         moves.push(tIdx);
         nr += d[0]; nc += d[1];
@@ -465,104 +488,400 @@ function getValidMoves(board, idx) {
     });
   }
 
+  // Filter moves that leave King in Check
+  if(checkSafe) {
+      return moves.filter(m => {
+          const bCopy = [...board];
+          bCopy[m] = bCopy[idx];
+          bCopy[idx] = '';
+          return !isKingInCheck(bCopy, isW);
+      });
+  }
   return moves;
 }
 
-// --- AI BRAIN (Minimax) ---
-function aiThink() {
-  const depth = State.difficulty === 'easy' ? 1 : (State.difficulty === 'normal' ? 2 : 3);
+function isKingInCheck(board, whiteKing) {
+    const kChar = whiteKing ? 'K' : 'k';
+    const kIdx = board.indexOf(kChar);
+    if(kIdx === -1) return true; // King dead (shouldn't happen)
+    return isSquareAttacked(board, kIdx, !whiteKing);
+}
+
+function isSquareAttacked(board, idx, byWhite) {
+    for(let i=0; i<64; i++) {
+        if(board[i] && isWhite(board[i]) === byWhite) {
+            // Optimization: Don't check for check safety recursively
+            if(getValidMoves(board, i, false).includes(idx)) return true;
+        }
+    }
+    return false;
+}
+
+// --- INTERACTION ---
+function handleCellClick(idx) {
+  if(!State.gameActive || State.replayMode) return;
+  if((State.mode === 'ai' || State.mode === 'training') && State.turn === 'black') return;
   
-  // AI is always Black (maximizing for Black, which effectively means minimizing score if White is +)
-  // Let's standardise: White pieces +, Black pieces -. AI wants LOWEST score.
-  
-  const bestMove = minimax(State.board, depth, -Infinity, Infinity, false).move; // false = Black turn
-  
-  if(bestMove) {
-    executeMove(bestMove.from, bestMove.to);
+  const piece = State.board[idx];
+  const isOwn = piece && (State.turn === 'white' ? isWhite(piece) : !isWhite(piece));
+
+  if(isOwn) {
+    State.selectedIdx = idx;
+    State.validMoves = getValidMoves(State.board, idx);
+    renderBoard();
+  } else if(State.selectedIdx !== null && State.validMoves.includes(idx)) {
+    executeMove(State.selectedIdx, idx);
   } else {
-    // No moves? (Stalemate or Mate) - simplistic handler
-    gameOver('white'); 
+    State.selectedIdx = null; State.validMoves = [];
+    renderBoard();
   }
 }
 
-function minimax(board, depth, alpha, beta, isMaximizing) {
-  if(depth === 0) return { score: evaluate(board) };
-
-  const moves = getAllMoves(board, isMaximizing);
+function executeMove(from, to) {
+  const piece = State.board[from];
+  const isW = isWhite(piece);
+  const target = State.board[to];
   
-  // Check for King Capture (Game Over state in tree)
-  // (In a real engine we check for mate, here we check if King is missing from board which shouldn't happen in legal generation but good for robustness)
+  let moveNot = PIECES[piece] + (target ? 'x' : '') + getCoords(to);
+
+  // Castling
+  if(piece.toLowerCase() === 'k' && Math.abs(to - from) === 2) {
+      const rIdx = to > from ? to + 1 : to - 2;
+      const rDest = to > from ? to - 1 : to + 1;
+      State.board[rDest] = State.board[rIdx];
+      State.board[rIdx] = '';
+      moveNot = "O-O";
+  }
+  // En Passant
+  if(piece.toLowerCase() === 'p' && !State.board[to] && (to % 8 !== from % 8)) {
+      State.board[to - (isW ? -8 : 8)] = '';
+      moveNot = "px" + getCoords(to) + " (ep)";
+  }
+
+  // Update Board
+  State.history.lastMove = { from, to, piece };
+  State.board[to] = piece;
+  State.board[from] = '';
   
-  if(moves.length === 0) return { score: evaluate(board) };
+  if(from in State.history.hasMoved) State.history.hasMoved[from] = true;
 
-  let bestMove = null;
+  // Promotion
+  if(piece.toLowerCase() === 'p' && (Math.floor(to/8) === 0 || Math.floor(to/8) === 7)) {
+      if((State.mode === 'ai' || State.mode === 'training') && !isW) {
+          State.board[to] = 'q';
+          addLog(moveNot + "=Q", isW);
+          finalizeTurn();
+      } else {
+          showPromotion(to, isW, moveNot);
+      }
+      return;
+  }
 
-  if(isMaximizing) { // WHITE (Max)
-    let maxEval = -Infinity;
-    for(let m of moves) {
-      const saved = board[m.to];
-      board[m.to] = board[m.from];
-      board[m.from] = '';
-      
-      const eval = minimax(board, depth-1, alpha, beta, false).score;
-      
-      board[m.from] = board[m.to];
-      board[m.to] = saved;
+  addLog(moveNot, isW);
+  finalizeTurn();
+}
 
-      if(eval > maxEval) { maxEval = eval; bestMove = m; }
-      alpha = Math.max(alpha, eval);
-      if(beta <= alpha) break;
+function getCoords(idx) {
+    const f = 'abcdefgh'[idx%8];
+    const r = 8 - Math.floor(idx/8);
+    return f+r;
+}
+
+function addLog(txt, isW) {
+    const history = State.history.moveStack;
+    const turnNum = Math.ceil((history.length) / 2);
+    
+    if(isW) {
+        const row = document.createElement('div');
+        row.className = 'history-row';
+        row.innerHTML = `<div class="history-num">${turnNum}.</div><div class="history-move white">${txt}</div><div class="history-move black" id="mv-b-${turnNum}"></div>`;
+        UI.history.appendChild(row);
+    } else {
+        const el = document.getElementById(`mv-b-${turnNum}`);
+        if(el) el.innerText = txt;
     }
-    return { score: maxEval, move: bestMove };
-  } else { // BLACK (Min)
-    let minEval = Infinity;
-    for(let m of moves) {
-      const saved = board[m.to];
-      board[m.to] = board[m.from];
-      board[m.from] = '';
-      
-      const eval = minimax(board, depth-1, alpha, beta, true).score;
-      
-      board[m.from] = board[m.to];
-      board[m.to] = saved;
+    UI.history.scrollTop = UI.history.scrollHeight;
+}
 
-      if(eval < minEval) { minEval = eval; bestMove = m; }
-      beta = Math.min(beta, eval);
-      if(beta <= alpha) break;
-    }
-    return { score: minEval, move: bestMove };
+function recordHistorySnapshot() {
+    State.history.moveStack.push({
+        board: [...State.board],
+        turn: State.turn
+    });
+}
+
+function finalizeTurn() {
+  recordHistorySnapshot();
+  
+  State.turn = State.turn === 'white' ? 'black' : 'white';
+  State.selectedIdx = null; State.validMoves = [];
+  
+  const inCheck = isKingInCheck(State.board, State.turn === 'white');
+  
+  // Game End Checks
+  const hasMoves = hasValidMoves(State.turn === 'white');
+  
+  if(!hasMoves) {
+      if(inCheck) {
+          gameOver(State.turn === 'white' ? 'black' : 'white', "CHECKMATE");
+      } else {
+          gameOver('draw', "STALEMATE");
+      }
+      renderBoard();
+      return;
+  }
+  
+  if(checkInsufficientMaterial()) {
+      gameOver('draw', "INSUFFICIENT MATERIAL");
+      renderBoard();
+      return;
+  }
+
+  renderBoard();
+  updateStatus();
+
+  // AI / Training Logic
+  if(State.gameActive) {
+      if((State.mode === 'ai' || State.mode === 'training') && State.turn === 'black') {
+          setTimeout(aiThink, 500);
+      } else if(State.mode === 'training' && State.turn === 'white') {
+          setTimeout(showTrainingHint, 200);
+      }
   }
 }
 
-function getAllMoves(board, isWhiteTurn) {
-  let all = [];
-  board.forEach((p, i) => {
-    if(p && isWhite(p) === isWhiteTurn) {
-      const moves = getValidMoves(board, i);
-      moves.forEach(target => all.push({ from: i, to: target }));
+function hasValidMoves(isWhiteTurn) {
+    for(let i=0; i<64; i++) {
+        if(State.board[i] && isWhite(State.board[i]) === isWhiteTurn) {
+            if(getValidMoves(State.board, i).length > 0) return true;
+        }
     }
+    return false;
+}
+
+// INSUFFICIENT MATERIAL LOGIC
+function checkInsufficientMaterial() {
+    const pieces = State.board.filter(p => p !== '').map(p => p.toLowerCase());
+    const len = pieces.length;
+    
+    // King vs King
+    if(len === 2) return true;
+    
+    // King + Minor vs King
+    if(len === 3 && (pieces.includes('n') || pieces.includes('b'))) return true;
+    
+    // King + Bishop vs King + Bishop (Same color bishops is draw, but for simplicity we flag complex endgames elsewhere)
+    // Basic catch:
+    if(len === 4 && pieces.filter(p => p === 'b').length === 2) return true;
+    
+    return false;
+}
+
+function showPromotion(idx, isW, movePrefix) {
+    UI.promo.classList.remove('hidden');
+    UI.promo.innerHTML = '';
+    const choices = isW ? ['Q','R','B','N'] : ['q','r','b','n'];
+    choices.forEach(c => {
+        const el = document.createElement('div');
+        el.className = 'promo-choice';
+        el.innerText = PIECES[c];
+        el.onclick = () => {
+            State.board[idx] = c;
+            addLog(movePrefix + "=" + c.toUpperCase(), isW);
+            UI.promo.classList.add('hidden');
+            finalizeTurn();
+        };
+        UI.promo.appendChild(el);
+    });
+}
+
+function renderBoard() {
+  UI.board.querySelectorAll('.cell').forEach(c => c.remove());
+  const checkIdx = isKingInCheck(State.board, State.turn === 'white') ? State.board.indexOf(State.turn==='white'?'K':'k') : -1;
+  const bestMove = (State.mode === 'training' && State.trainingMove) ? State.trainingMove : null;
+
+  State.board.forEach((cell, i) => {
+    const el = document.createElement('div');
+    el.className = `cell ${(Math.floor(i/8) + i%8)%2 ? 'dark' : 'light'}`;
+    if(i === checkIdx) el.classList.add('in-check');
+    if(State.selectedIdx === i) el.classList.add('selected');
+    
+    // Replay highlight
+    if(State.replayMode && i === State.lastReplayTo) el.classList.add('selected');
+
+    if(State.validMoves.includes(i)) {
+        const marker = document.createElement('div');
+        marker.className = State.board[i] ? 'capture-ring' : 'valid-dot';
+        el.appendChild(marker);
+    }
+    
+    // Training Highlight
+    if(!State.replayMode && bestMove && bestMove.from === i) el.classList.add('best-move');
+    
+    el.onclick = () => handleCellClick(i);
+    
+    if(cell) {
+      const p = document.createElement('span');
+      p.className = `piece ${isWhite(cell) ? 'p-white' : 'p-black'}`;
+      p.innerText = PIECES[cell];
+      el.appendChild(p);
+    }
+    UI.board.appendChild(el);
   });
-  // Sort moves: Captures first (simple optimization)
-  return all.sort((a,b) => (board[b.to]?10:0) - (board[a.to]?10:0));
+  
+  State.trainingMove = null; // Clear hint after render
+}
+
+function updateStatus() {
+  UI.turn.innerText = `${State.turn.toUpperCase()} TO MOVE`;
+  UI.turn.className = `hud-box turn-indicator ${State.turn === 'black' ? 'vile' : ''}`;
+}
+
+function gameOver(winner, reason) {
+  State.gameActive = false;
+  if(winner !== 'draw') State.score[winner]++;
+  
+  UI.modal.classList.remove('hidden');
+  
+  if(winner === 'draw') {
+      UI.msg.innerText = "DRAW DETECTED";
+      UI.msg.style.color = "#aaa";
+  } else {
+      UI.msg.innerText = `${winner.toUpperCase()} WINS`;
+      UI.msg.style.color = winner === 'white' ? 'var(--cyber-blue)' : 'var(--vile-red)';
+  }
+  
+  UI.sub.innerText = reason;
+}
+
+// --- REPLAY SYSTEM ---
+
+function startReplay() {
+    UI.modal.classList.add('hidden');
+    UI.liveCtrl.classList.add('hidden');
+    UI.repCtrl.classList.remove('hidden');
+    UI.panelTitle.innerText = "REPLAY SESSION";
+    
+    State.replayMode = true;
+    State.replayIndex = 0; // Start at beginning
+    loadReplayState();
+}
+
+function exitReplay() {
+    if(State.autoReplayTimer) clearInterval(State.autoReplayTimer);
+    UI.menu.classList.remove('hidden');
+    UI.game.classList.add('hidden');
+}
+
+function loadReplayState() {
+    const snapshot = State.history.moveStack[State.replayIndex];
+    State.board = [...snapshot.board];
+    // Highlight move logic would go here if we stored from/to in history stack properly
+    // For now, just rendering the board state is sufficient
+    renderBoard();
+}
+
+function replayStep(dir) {
+    const newIdx = State.replayIndex + dir;
+    if(newIdx >= 0 && newIdx < State.history.moveStack.length) {
+        State.replayIndex = newIdx;
+        loadReplayState();
+    }
+}
+
+function toggleAutoReplay() {
+    if(State.autoReplayTimer) {
+        clearInterval(State.autoReplayTimer);
+        State.autoReplayTimer = null;
+    } else {
+        State.autoReplayTimer = setInterval(() => {
+            if(State.replayIndex < State.history.moveStack.length - 1) {
+                replayStep(1);
+            } else {
+                clearInterval(State.autoReplayTimer);
+                State.autoReplayTimer = null;
+            }
+        }, 800);
+    }
+}
+
+// --- AI & TRAINING ---
+
+function aiThink() {
+  // Simple heuristic AI
+  const depth = {easy:1, normal:2, hard:3}[State.difficulty] || 2;
+  const result = minimax(State.board, depth, -Infinity, Infinity, false);
+  if(result.move) executeMove(result.move.from, result.move.to);
+}
+
+function showTrainingHint() {
+    // Finds best move for white to suggest to player
+    const result = minimax(State.board, 2, -Infinity, Infinity, true);
+    if(result.move) {
+        State.trainingMove = result.move;
+        renderBoard();
+    }
+}
+
+function minimax(board, depth, alpha, beta, maximizing) {
+    if(depth === 0) return { score: evaluate(board) };
+    
+    let bestMove = null;
+    let moves = [];
+    board.forEach((p, i) => {
+        if(p && isWhite(p) === maximizing) {
+            getValidMoves(board, i).forEach(m => moves.push({from:i, to:m}));
+        }
+    });
+
+    if(moves.length === 0) return { score: maximizing ? -9999 : 9999 };
+
+    // Sort moves to optimize alpha-beta (Captures first)
+    moves.sort((a,b) => (board[b.to]?10:0) - (board[a.to]?10:0));
+
+    if(maximizing) {
+        let maxEval = -Infinity;
+        for(let m of moves) {
+            const b = [...board]; b[m.to] = b[m.from]; b[m.from] = '';
+            // Pawn promotion assumption for eval
+            if(b[m.to].toLowerCase() === 'p' && (Math.floor(m.to/8)===0)) b[m.to] = 'Q';
+
+            const ev = minimax(b, depth-1, alpha, beta, false).score;
+            if(ev > maxEval) { maxEval = ev; bestMove = m; }
+            alpha = Math.max(alpha, ev);
+            if(beta <= alpha) break;
+        }
+        return { score: maxEval, move: bestMove };
+    } else {
+        let minEval = Infinity;
+        for(let m of moves) {
+            const b = [...board]; b[m.to] = b[m.from]; b[m.from] = '';
+            if(b[m.to].toLowerCase() === 'p' && (Math.floor(m.to/8)===7)) b[m.to] = 'q';
+
+            const ev = minimax(b, depth-1, alpha, beta, true).score;
+            if(ev < minEval) { minEval = ev; bestMove = m; }
+            beta = Math.min(beta, ev);
+            if(beta <= alpha) break;
+        }
+        return { score: minEval, move: bestMove };
+    }
 }
 
 function evaluate(board) {
-  const values = { p:10, n:30, b:30, r:50, q:90, k:900 };
-  let score = 0;
-  board.forEach((p, i) => {
-    if(!p) return;
-    const type = p.toLowerCase();
-    const val = values[type];
-    const isW = isWhite(p);
-    
-    // Positional bias (Centralize)
-    const r = Math.floor(i/8), c = i%8;
-    const centerBonus = (r>2 && r<5 && c>2 && c<5) ? 2 : 0;
-    
-    if(isW) score += (val + centerBonus);
-    else score -= (val + centerBonus);
-  });
-  return score;
+    const vals = { p:10, n:32, b:33, r:50, q:90, k:900 };
+    let score = 0;
+    board.forEach((p, i) => {
+        if(!p) return;
+        const v = vals[p.toLowerCase()];
+        const white = isWhite(p);
+        let bonus = 0;
+        // Centrality bonus
+        const r = Math.floor(i/8), c = i%8;
+        if(r > 2 && r < 5 && c > 2 && c < 5) bonus += 2;
+        
+        score += white ? (v + bonus) : -(v + bonus);
+    });
+    return score;
 }
 
 </script>
